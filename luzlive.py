@@ -15,10 +15,12 @@ class GladeHandlers:
     def on_potar_value_changed(widget,data=None):
         widgets["potar value"].set_label( str(int(widgets["potar"].get_value() * 100 / 255))+" %")
         
-    def on_listePotars_cursor_changed():
-    	pass
-
-
+    def on_listePotars_cursor_changed(treeview):
+    	path = treeview.get_cursor()[0][0]
+    	print widgets.liststore[path][0]
+    	print widgets.liststore[path][1]
+    	print widgets.liststore[path][2]
+    	
 class WidgetsWrapper:
     def __init__(self):
         self.widgets = gtk.glade.XML("luz-live.glade")
