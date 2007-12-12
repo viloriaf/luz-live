@@ -7,8 +7,12 @@ import gobject
 
 class Effect:
 
-    def __init__(self):
-        self.desc="test ton cul"
+    def __init__(self,liststore):
+        self.desc=""
+        self.channels={}
+        
+        for row in liststore :
+            self.channels[row[0]]=row[3]
 
     def __str__(self):
         return self.desc
@@ -34,13 +38,24 @@ class GladeHandlers:
         
     def on_listPotar_cursor_changed(treeview):
         path = treeview.get_cursor()[0][0]
-
         widgets["potarValueActual"].set_value(widgets.liststore[path][3])
         widgets["labelPotarName"].set_label(widgets.liststore[path][1])
         
+    def on_listEffect_cursor_changed(treeview):
+        path = treeview.get_cursor()[0][0]
+        effect_to_put = widgets.effects_liststore[path][1]
+        for nchannel,value in effect_to_put.channels.items():
+            widgets.liststore[nchannel-1][3]=value
+            widgets.liststore[nchannel-1][2]=str(value*100/255)+" %"
+            
+        path = widgets["listPotar"].get_cursor()[0][0]
+        widgets["potarValueActual"].set_value(widgets.liststore[path][3])
+        widgets["labelPotarName"].set_label(widgets.liststore[path][1])
+        
+        
     def on_enregistrereffet_clicked(toolbutton):
-        print "enregistrer effet"
-                
+        widgets.effects_liststore.append([1,Effect(widgets.liststore)])
+
 class WidgetsWrapper:
     def __init__(self):
         self.widgets = gtk.glade.XML("luz-live.glade")
@@ -48,7 +63,6 @@ class WidgetsWrapper:
         self.init_DMX()
         self.init_effects()
         
-
     def init_DMX(self):
         self.liststore = gtk.ListStore(gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
         for i in range(512):
@@ -78,8 +92,6 @@ class WidgetsWrapper:
         
     def init_effects(self):
         self.effects_liststore = gtk.ListStore(gobject.TYPE_INT,gobject.TYPE_PYOBJECT)
-        for i in range(10):
-            self.effects_liststore.append([i+1,Effect()])
         
         self["listEffect"].set_model(self.effects_liststore)
         
