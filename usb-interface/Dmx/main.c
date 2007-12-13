@@ -14,7 +14,6 @@
 #pragma code
 static void InitializeSystem(void);
 void USBTasks(void);
-extern void tmr2 (void);			// See user.c
 /** V E C T O R  R E M A P P I N G *******************************************/
 
 extern void _startup (void);        // See c018i.c in your C18 compiler dir
@@ -27,13 +26,13 @@ void _reset (void)
 #pragma code _HIGH_INTERRUPT_VECTOR = 0x000808
 void _high_ISR (void)
 {
-	;
+	_asm goto InterruptHandler _endasm
 }
 
 #pragma code low_isr_vector = 0x000818
 void low_vector (void)
 {
-	_asm goto tmr2 _endasm
+	_asm goto InterruptHandler _endasm
 }
 
 #pragma code
