@@ -24,12 +24,12 @@ void ProcessUSBData(void);
 void SendDMXTrame();
 extern void send_init_trame(void);
 extern void send_byte(void);
-void tmr2 (void);
+void InterruptHandler (void);
 #pragma code
 
 /** I N T E R R U P T S ***************************************/
-#pragma interruptlow tmr2
-void tmr2 (void)
+#pragma interruptlow InterruptHandler
+void InterruptHandler (void)
 {
 	if (PIR1bits.TMR2IF==1)
 	{
@@ -41,8 +41,6 @@ void tmr2 (void)
 			ledflag=1;
 			T2CONbits.TMR2ON=0;
 			TMR2=0;
-			//SendDMXTrame();
-			//LATDbits.LATD0=!LATDbits.LATD0;
 		}
 	}
 }
@@ -94,10 +92,9 @@ void ProcessIO(void)
 	if (ledflag==1)
 	{
 		ledflag=0;
-		LED_1_On();
+		LED_1_Toggle();
 		//SendDMXTrame();
 		T2CONbits.TMR2ON=1;
-		LED_1_Off();
 	}
 	if((usb_device_state < CONFIGURED_STATE)) return;
     ProcessUSBData();
@@ -130,11 +127,12 @@ void ProcessUSBData(void)
 {
 	if (HIDRxReport(input_buffer,64))
 	{
-		LED_2_On();
+		
 		data_ready=1;
 		switch(input_buffer[0])
 		{
 			case update_DMX:
+				LED_2_Toggle();
 				start=input_buffer[1];
 				stop=input_buffer[1]+input_buffer[2];
 				if (stop>255) stop=255;
@@ -150,7 +148,6 @@ void ProcessUSBData(void)
 			default:
 				break;
 		}
-		LED_2_Off();
 	}
 
     if (data_ready && input_enable && !mHIDTxIsBusy())

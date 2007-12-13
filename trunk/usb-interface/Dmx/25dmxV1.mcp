@@ -4,10 +4,10 @@ file_version=1.0
 [PATH_INFO]
 BuildDirPolicy=BuildDirIsSourceDir
 dir_src=
-dir_bin=D:\PIC\25_dmx_v1\output
-dir_tmp=D:\PIC\25_dmx_v1\output
+dir_bin=C:\Luz\usb-interface\Dmx\output
+dir_tmp=C:\Luz\usb-interface\Dmx\output
 dir_sin=
-dir_inc=C:\MCC18\h;D:\PIC\25_dmx_v1
+dir_inc=C:\MCC18\h;C:\Luz\usb-interface\Dmx
 dir_lib=C:\MCC18\lib
 dir_lkr=C:\MCC18\lkr
 [CAT_FILTERS]
