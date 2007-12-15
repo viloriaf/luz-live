@@ -51,9 +51,13 @@
 #define LED_2_Toggle()     LED_2 = !LED_2;
 
 /** S W I T C H *****************************************************/
-#define mInitSwitch()  TRISCbits.TRISC2=1;
-#define sw                 PORTCbits.RC2
+#define mInitSwitch()  		TRISCbits.TRISC2=1;
+#define sw					PORTCbits.RC2
 
+/** D M X ***********************************************************/
+#define mInitDMX()			TRISCbits.TRISC1=1; TRISCbits.TRISC0=0;
+#define dmxI				PORTCbits.RC1
+#define dmxO				LATCbits.LATC0
 
 /** S P I : Chip Select Lines ***************************************/
 #define tris_cs_temp_sensor TRISBbits.TRISB2    // Output

@@ -26,13 +26,13 @@ void _reset (void)
 #pragma code _HIGH_INTERRUPT_VECTOR = 0x000808
 void _high_ISR (void)
 {
-	_asm goto InterruptHandler _endasm
+	_asm goto timer_isr _endasm
 }
 
 #pragma code low_isr_vector = 0x000818
 void low_vector (void)
 {
-	_asm goto InterruptHandler _endasm
+	_asm goto timer_isr _endasm
 }
 
 #pragma code
