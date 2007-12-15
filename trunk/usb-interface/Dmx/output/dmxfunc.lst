@@ -1,4 +1,4 @@
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  1
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -57,7 +57,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 00005C EC?? F???      00042                 call    Delay
 000060 EC?? F???      00043                 call    DelaySup
 000064 9082           00044                 bcf             PORTC,0 ; BREAK Bit 11
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  2
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -116,7 +116,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0000F8 B0??           00095                         btfsc   dmx_byte,0
 0000FA D???           00096                         bra             SetBit0
 0000FC D???           00097                         bra             ClearBit0
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  3
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -175,7 +175,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 00014C D???           00148                         bra             ClearBit4
                       00149 
 00014E 0000           00150 SetBit4:        nop
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  4
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -234,7 +234,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0001AA 8082           00201                         bsf             PORTC,0 ;       STOP bit #2
 0001AC EC?? F???      00202                         call    Delay
 0001B0 EC?? F???      00203                         call    DelaySup
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  5
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  5
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -256,7 +256,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0001C4 0012           00217                         return
                       00218 
                       00219         end
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  6
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  6
 
 
 SYMBOL TABLE
@@ -315,7 +315,7 @@ BRGH                              00000002
 BSR                               00000FE0
 BTOEE                             00000004
 BTOEF                             00000004
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  7
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  7
 
 
 SYMBOL TABLE
@@ -374,7 +374,7 @@ CM0                               00000000
 CM1                               00000001
 CM2                               00000002
 CMCON                             00000FB4
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  8
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  8
 
 
 SYMBOL TABLE
@@ -433,7 +433,7 @@ ECCPAS0                           00000004
 ECCPAS1                           00000005
 ECCPAS2                           00000006
 ECCPASE                           00000007
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE  9
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE  9
 
 
 SYMBOL TABLE
@@ -492,7 +492,7 @@ HLVDEN                            00000004
 HLVDIE                            00000002
 HLVDIF                            00000002
 HLVDIN                            00000005
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 10
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 10
 
 
 SYMBOL TABLE
@@ -551,7 +551,7 @@ IVRST                             00000005
 LATA                              00000F89
 LATA0                             00000000
 LATA1                             00000001
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 11
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 11
 
 
 SYMBOL TABLE
@@ -610,7 +610,7 @@ OERR                              00000001
 OSC2                              00000006
 OSCCON                            00000FD3
 OSCFIE                            00000007
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 12
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 12
 
 
 SYMBOL TABLE
@@ -669,7 +669,7 @@ PREINC2                           00000FDC
 PROD                              00000FF3
 PRODH                             00000FF4
 PRODL                             00000FF3
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 13
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 13
 
 
 SYMBOL TABLE
@@ -728,7 +728,7 @@ RX9                               00000006
 RX9D                              00000000
 RXDTP                             00000005
 R_W                               00000002
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 14
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 14
 
 
 SYMBOL TABLE
@@ -787,7 +787,7 @@ SetBit5                           00000162
 SetBit6                           00000176
 SetBit7                           0000018A
 StopBit                           00000194
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 15
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 15
 
 
 SYMBOL TABLE
@@ -846,7 +846,7 @@ TMR1IP                            00000000
 TMR1L                             00000FCE
 TMR1ON                            00000000
 TMR2                              00000FCC
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 16
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 16
 
 
 SYMBOL TABLE
@@ -905,7 +905,7 @@ TX9D                              00000000
 TXCKP                             00000004
 TXEN                              00000005
 TXIE                              00000004
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 17
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 17
 
 
 SYMBOL TABLE
@@ -964,7 +964,7 @@ W                                 00000000
 WCOL                              00000007
 WDTCON                            00000FD1
 WR                                00000001
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 18
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 18
 
 
 SYMBOL TABLE
@@ -1023,7 +1023,7 @@ _EBTR1_OFF_7L                     000000FF
 _EBTR1_ON_7L                      000000FD
 _EBTR2_OFF_7L                     000000FF
 _EBTR2_ON_7L                      000000FB
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 19
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 19
 
 
 SYMBOL TABLE
@@ -1082,7 +1082,7 @@ _USBDIV_2_1L                      000000FF
 _VREGEN_OFF_2L                    000000DF
 _VREGEN_ON_2L                     000000FF
 _WDTPS_1024_2H                    000000F5
-MPASM  5.15                       DMXFUNC.ASM   12-13-2007  20:09:02         PAGE 20
+MPASM  5.15                       DMXFUNC.ASM   12-15-2007  21:57:52         PAGE 20
 
 
 SYMBOL TABLE
