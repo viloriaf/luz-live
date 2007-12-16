@@ -28,6 +28,9 @@ class GladeHandlers:
     def on_window1_delete_event(widget, event, data=None):
         gtk.main_quit()
 
+    def on_menu_quit_activate(menuitem):
+        gtk.main_quit()
+
     def on_potarValueActual_value_changed(widget,data=None):
         new_value_str = str(int(widgets["potarValueActual"].get_value() * 100 / 255))+" %"
         widgets["labelPotarValue"].set_label(new_value_str)
@@ -52,9 +55,21 @@ class GladeHandlers:
         widgets["potarValueActual"].set_value(widgets.liststore[path][3])
         widgets["labelPotarName"].set_label(widgets.liststore[path][1])
         
+        widgets["Enregistrer"].set_sensitive(True)
         
-    def on_enregistrereffet_clicked(toolbutton):
-        widgets.effects_liststore.append([1,Effect(widgets.liststore)])
+    def on_listEffect_drag_begin(widget, drag_context):
+        widgets["Enregistrer"].set_sensitive(False)
+                
+    def on_listEffect_drag_end(widget, drag_context):
+        for i in range(len(widgets.effects_liststore)):
+            widgets.effects_liststore[i][0] = i+1
+        
+    def on_enregistrernouveau_clicked(toolbutton):
+        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,Effect(widgets.liststore)])
+        
+    def on_Enregistrer_clicked(toolbutton):
+        path = widgets["listEffect"].get_cursor()[0][0]
+        widgets.effects_liststore[path][1] = Effect(widgets.liststore)
 
 class WidgetsWrapper:
     def __init__(self):
