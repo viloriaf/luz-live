@@ -20,6 +20,21 @@
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">_File</property>
                 <property name="use_underline">True</property>
+                <child>
+                  <widget class="GtkMenu" id="menu1">
+                    <property name="visible">True</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                    <child>
+                      <widget class="GtkMenuItem" id="menu_quit">
+                        <property name="visible">True</property>
+                        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                        <property name="label" translatable="yes">_Quit</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_menu_quit_activate"/>
+                      </widget>
+                    </child>
+                  </widget>
+                </child>
               </widget>
             </child>
             <child>
@@ -54,12 +69,25 @@
             <property name="visible">True</property>
             <property name="toolbar_style">GTK_TOOLBAR_BOTH</property>
             <child>
-              <widget class="GtkToolButton" id="enregistrer effet">
+              <widget class="GtkToolButton" id="Enregistrer">
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                <property name="label" translatable="yes">Enregistrer</property>
+                <property name="stock_id">gtk-media-record</property>
+                <signal name="clicked" handler="on_Enregistrer_clicked"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkToolButton" id="enregistrer nouveau">
                 <property name="visible">True</property>
                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                <property name="label" translatable="yes">Enregistrer effet</property>
+                <property name="label" translatable="yes">Enregistrer nouveau</property>
                 <property name="stock_id">gtk-add</property>
-                <signal name="clicked" handler="on_enregistrereffet_clicked"/>
+                <signal name="clicked" handler="on_enregistrernouveau_clicked"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -86,7 +114,10 @@
                   <widget class="GtkTreeView" id="listEffect">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="reorderable">True</property>
+                    <signal name="drag_begin" handler="on_listEffect_drag_begin"/>
                     <signal name="cursor_changed" handler="on_listEffect_cursor_changed"/>
+                    <signal name="drag_end" handler="on_listEffect_drag_end"/>
                   </widget>
                 </child>
               </widget>
