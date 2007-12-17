@@ -5,6 +5,8 @@ import gtk
 import gtk.glade
 import gobject
 
+import xml.dom.minidom
+
 class Effect:
 
     def __init__(self,liststore):
@@ -20,11 +22,14 @@ class Effect:
     def set_desc(self,new_text):
         self.desc = new_text
         
+    def getXml(self):
+        pass
+        
 class listEffect(gtk.liststore):
     def __init__(self):
         gtk.liststore.__init__(self, gobject.TYPE_INT, gobject.TYPE_PYOBJECT)
     
-    def getXmlNode(self):
+    def getXml(self):
         pass
     
 class listPotar(gtk.liststore):
@@ -33,7 +38,7 @@ class listPotar(gtk.liststore):
         for i in range(512):
             self.append([i+1,'ligne '+str(i+1),'0 %',0])
 
-    def getXmlNode(self):
+    def getXml(self):
         pass
 
 class GladeHandlers:
@@ -155,6 +160,14 @@ class WidgetsWrapper:
         pyobj = model.get_value(iter, 1)
         cell.set_property('text', str(pyobj))
         return
+        
+    def getXml(self):
+        doc = xml.dom.minidom.Document()
+        
+        luz_root = doc.createElement("luz")
+        doc.appendChild(luz_root)
+        
+        ##device = 
 
 if __name__ == "__main__":
     widgets = WidgetsWrapper()
