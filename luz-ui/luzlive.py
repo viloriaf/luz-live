@@ -6,6 +6,9 @@ import gtk.glade
 import gobject
 
 import xml.dom.minidom
+from xml.dom.ext import PrettyPrint
+
+import os.path
 
 class Effect:
 
@@ -13,8 +16,12 @@ class Effect:
         self.desc=""
         self.channels={}
         
-        for row in liststore :
-            self.channels[row[0]]=row[3]
+        if type(liststore)==listPotar:
+            for row in liststore : 
+                self.channels[row[0]]=row[3]
+        elif type(liststore)==xml.dom.minicompat.NodeList:
+            for channel in liststore:
+                self.channels[int(channel.getAttribute("id"))]=int(channel.getAttribute("value"))
 
     def __str__(self):
         return self.desc
@@ -22,24 +29,58 @@ class Effect:
     def set_desc(self,new_text):
         self.desc = new_text
         
-    def getXml(self):
-        pass
-        
-class listEffect(gtk.liststore):
+    def getXml(self, doc, effectNode):
+        for channel_id,value in self.channels.items():
+            if value>0:
+                channel = doc.createElement("channel")
+                channel.setAttribute("id",str(channel_id))
+                channel.setAttribute("value",str(value))
+                effectNode.appendChild(channel)
+                
+class listEffect(gtk.ListStore):
     def __init__(self):
-        gtk.liststore.__init__(self, gobject.TYPE_INT, gobject.TYPE_PYOBJECT)
+        gtk.ListStore.__init__(self, gobject.TYPE_INT, gobject.TYPE_PYOBJECT)
     
-    def getXml(self):
-        pass
+    def getXml(self,doc,root):
+        effectListNode=doc.createElement("listEffect")
+        for effect_id,effect in self:
+            effectNode = doc.createElement("effect")
+            effectNode.setAttribute("id",str(effect_id))
+            effectNode.setAttribute("desc",str(effect.desc))
+            effect.getXml(doc,effectNode)
+            effectListNode.appendChild(effectNode)
+        root.appendChild(effectListNode)
+        
+    def setXml(self,listEffectNode):
+        self.clear()
+        for effect in listEffectNode.getElementsByTagName("effect"):
+            effect_obj = Effect(effect.getElementsByTagName("channel"))
+            effect_obj.set_desc(effect.getAttribute("desc"))
+            self.append([int(effect.getAttribute("id")),effect_obj])
+            
     
-class listPotar(gtk.liststore):
+class listPotar(gtk.ListStore):
     def __init__(self):
         gtk.ListStore.__init__(self,gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
         for i in range(512):
             self.append([i+1,'ligne '+str(i+1),'0 %',0])
 
-    def getXml(self):
-        pass
+    def getXml(self,doc,root):
+        device = doc.createElement("device")
+        for line_id, line_desc, line_percent, line_value in self:
+            line = doc.createElement("line")
+            line.setAttribute("id",str(line_id))
+            line.setAttribute("desc",str(line_desc))
+            device.appendChild(line)
+        root.appendChild(device)
+        
+    def setXml(self,deviceNode):
+        self.clear()
+        for line in deviceNode.getElementsByTagName("line"):
+            self.append( [
+                int(line.getAttribute("id")),
+                line.getAttribute("desc"),
+                '0 %', 0 ] )
 
 class GladeHandlers:
 
@@ -49,7 +90,7 @@ class GladeHandlers:
     def on_window1_delete_event(widget, event, data=None):
         gtk.main_quit()
 
-    def on_menu_quit_activate(menuitem):
+    def on_Quit_activate(menuitem):
         gtk.main_quit()
 
     def on_potarValueActual_value_changed(widget,data=None):
@@ -91,6 +132,26 @@ class GladeHandlers:
     def on_Enregistrer_clicked(toolbutton):
         path = widgets["listEffect"].get_cursor()[0][0]
         widgets.effects_liststore[path][1] = Effect(widgets.liststore)
+        
+    def on_Save_clicked(toolbutton):
+        if widgets.filename:
+            widgets.save( widgets.filename )
+        else:
+            retour = widgets["filechooserdialog_save"].run()
+            widgets["filechooserdialog_save"].hide()
+            if retour == 0:
+                widgets.save( widgets["filechooserdialog_save"].get_filename() )
+                
+
+    def on_Ouvrir_clicked(toolbutton):
+        retour = widgets["filechooserdialog_open"].run()
+        widgets["filechooserdialog_open"].hide()
+        if retour == 0:
+            widgets.load( widgets["filechooserdialog_open"].get_filename() )
+        
+    def on_About_activate(menuitem):
+        widgets["aboutdialog1"].run()
+        widgets["aboutdialog1"].hide()
 
 class WidgetsWrapper:
     def __init__(self):
@@ -98,6 +159,9 @@ class WidgetsWrapper:
         self.widgets.signal_autoconnect(GladeHandlers.__dict__)
         self.init_DMX()
         self.init_effects()
+        self.init_filechooser()
+        
+        self.filename = ""
         
     def init_DMX(self):
         self.liststore = listPotar()
@@ -126,7 +190,7 @@ class WidgetsWrapper:
         value_column.add_attribute(value_cell,'text',2)
         
     def init_effects(self):
-        self.effects_liststore = listEffects()
+        self.effects_liststore = listEffect()
         
         self["listEffect"].set_model(self.effects_liststore)
         
@@ -145,6 +209,18 @@ class WidgetsWrapper:
         desc_effect_cell.connect('edited', self.change_desc_effect)
         desc_column_effect.pack_start(desc_effect_cell)
         desc_column_effect.set_cell_data_func(desc_effect_cell, self.display_effect, None)
+            
+    def init_filechooser(self):
+        filter = gtk.FileFilter()
+        filter.set_name("Luz Live file")
+        filter.add_pattern("*.luz")
+        self["filechooserdialog_save"].add_filter(filter)
+        self["filechooserdialog_open"].add_filter(filter)
+        
+        filter = gtk.FileFilter()
+        filter.set_name("All files")
+        filter.add_pattern("*")
+        self["filechooserdialog_save"].add_filter(filter)
             
     def __getitem__(self, key):
         return self.widgets.get_widget(key)
@@ -165,9 +241,39 @@ class WidgetsWrapper:
         doc = xml.dom.minidom.Document()
         
         luz_root = doc.createElement("luz")
-        doc.appendChild(luz_root)
         
-        ##device = 
+        self.liststore.getXml(doc,luz_root)
+        self.effects_liststore.getXml(doc,luz_root)
+        
+        doc.appendChild(luz_root)
+                
+        return doc
+        
+    def save(self,filename):
+        basename = os.path.basename(filename)
+        dirname = os.path.dirname(filename)
+        basename, ext = os.path.splitext(basename)
+        
+        ext=".luz"
+        
+        filename = os.path.join(dirname,basename+ext)
+        
+        file = open(filename,"w")
+        
+        PrettyPrint(self.getXml(),file)
+        file.close()
+        
+        self.filename = filename
+        
+    def load(self,filename):
+        doc = xml.dom.minidom.parse(filename)
+        self.liststore.setXml(doc.getElementsByTagName("device")[0])
+        self.effects_liststore.setXml(doc.getElementsByTagName("listEffect")[0])
+        
+        self["listPotar"].set_cursor(0)
+        self["listEffect"].set_cursor(0)
+        
+        self.filename = filename
 
 if __name__ == "__main__":
     widgets = WidgetsWrapper()
