@@ -19,6 +19,22 @@ class Effect:
         
     def set_desc(self,new_text):
         self.desc = new_text
+        
+class listEffect(gtk.liststore):
+    def __init__(self):
+        gtk.liststore.__init__(self, gobject.TYPE_INT, gobject.TYPE_PYOBJECT)
+    
+    def getXmlNode(self):
+        pass
+    
+class listPotar(gtk.liststore):
+    def __init__(self):
+        gtk.ListStore.__init__(self,gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
+        for i in range(512):
+            self.append([i+1,'ligne '+str(i+1),'0 %',0])
+
+    def getXmlNode(self):
+        pass
 
 class GladeHandlers:
 
@@ -79,9 +95,8 @@ class WidgetsWrapper:
         self.init_effects()
         
     def init_DMX(self):
-        self.liststore = gtk.ListStore(gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
-        for i in range(512):
-            self.liststore.append([i+1,'ligne '+str(i+1),'0 %',0])
+        self.liststore = listPotar()
+            
         self["listPotar"].set_model(self.liststore)
         
         number_column = gtk.TreeViewColumn('Numero de ligne')
@@ -106,7 +121,7 @@ class WidgetsWrapper:
         value_column.add_attribute(value_cell,'text',2)
         
     def init_effects(self):
-        self.effects_liststore = gtk.ListStore(gobject.TYPE_INT,gobject.TYPE_PYOBJECT)
+        self.effects_liststore = listEffects()
         
         self["listEffect"].set_model(self.effects_liststore)
         
