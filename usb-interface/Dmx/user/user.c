@@ -51,7 +51,7 @@ void UserInit(void)
 	for (i=0;i<64;i++)
 		dmx[i]=0x00;
 	
-	T0CON = 0b0000001;
+	T0CON = 0b00000001;
 	TMR0L = TMR0H = 0;
 	INTCONbits.T0IF = 0;
 	INTCONbits.T0IE = 1;
@@ -64,6 +64,7 @@ void UserInit(void)
 	isrflag = 0;
 	input_enable=0;
 	max_chan=0x40;
+	//INTCONbits.GIE=1;
 }//end UserInit
 
 //----------------------------------
@@ -76,7 +77,7 @@ void ProcessIO(void)
 	{
 		isrflag=0;
 		SendDMXTrame();
-		LED_1_Toggle()
+		LED_1_Toggle();
 		T0CONbits.TMR0ON = 1;	
 	}
 	INTCONbits.GIE=0;
@@ -118,7 +119,6 @@ void ProcessUSBData(void)
 				if (stop>255) stop=255;
 				for (i=start;i<stop;i++)
 					dmx[i]=input_buffer[i-start+3];
-				//dmxO = LED_1 = input_buffer[3];
 				break;
 			case config_OUTPUT:
 				max_chan=input_buffer[1];
