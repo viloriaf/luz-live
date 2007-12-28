@@ -13,22 +13,17 @@ import os.path
 class Effect:
 
     def __init__(self,liststore):
-        self.desc=""
         self.channels={}
         
         if type(liststore)==listPotar:
             for row in liststore : 
                 self.channels[row[0]]=row[3]
         elif type(liststore)==xml.dom.minicompat.NodeList:
+            for i in range(len(widgets.liststore)):
+                self.channels[i]=0
             for channel in liststore:
                 self.channels[int(channel.getAttribute("id"))]=int(channel.getAttribute("value"))
 
-    def __str__(self):
-        return self.desc
-        
-    def set_desc(self,new_text):
-        self.desc = new_text
-        
     def getXml(self, doc, effectNode):
         for channel_id,value in self.channels.items():
             if value>0:
@@ -36,17 +31,17 @@ class Effect:
                 channel.setAttribute("id",str(channel_id))
                 channel.setAttribute("value",str(value))
                 effectNode.appendChild(channel)
-                
+
 class listEffect(gtk.ListStore):
     def __init__(self):
-        gtk.ListStore.__init__(self, gobject.TYPE_INT, gobject.TYPE_PYOBJECT)
+        gtk.ListStore.__init__(self, gobject.TYPE_INT, gobject.TYPE_STRING, gobject.TYPE_PYOBJECT)
     
     def getXml(self,doc,root):
         effectListNode=doc.createElement("listEffect")
-        for effect_id,effect in self:
+        for effect_id,effect_desc,effect in self:
             effectNode = doc.createElement("effect")
             effectNode.setAttribute("id",str(effect_id))
-            effectNode.setAttribute("desc",str(effect.desc))
+            effectNode.setAttribute("desc",str(effect_desc))
             effect.getXml(doc,effectNode)
             effectListNode.appendChild(effectNode)
         root.appendChild(effectListNode)
@@ -55,10 +50,8 @@ class listEffect(gtk.ListStore):
         self.clear()
         for effect in listEffectNode.getElementsByTagName("effect"):
             effect_obj = Effect(effect.getElementsByTagName("channel"))
-            effect_obj.set_desc(effect.getAttribute("desc"))
-            self.append([int(effect.getAttribute("id")),effect_obj])
-            
-    
+            self.append([int(effect.getAttribute("id")),effect.getAttribute("desc"),effect_obj])
+
 class listPotar(gtk.ListStore):
     def __init__(self):
         gtk.ListStore.__init__(self,gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
@@ -108,7 +101,8 @@ class GladeHandlers:
         
     def on_listEffect_cursor_changed(treeview):
         path = treeview.get_cursor()[0][0]
-        effect_to_put = widgets.effects_liststore[path][1]
+        effect_to_put = widgets.effects_liststore[path][2]
+        
         for nchannel,value in effect_to_put.channels.items():
             widgets.liststore[nchannel-1][3]=value
             widgets.liststore[nchannel-1][2]=str(value*100/255)+" %"
@@ -116,7 +110,6 @@ class GladeHandlers:
         path = widgets["listPotar"].get_cursor()[0][0]
         widgets["potarValueActual"].set_value(widgets.liststore[path][3])
         widgets["labelPotarName"].set_label(widgets.liststore[path][1])
-        
         widgets["Enregistrer"].set_sensitive(True)
         
     def on_listEffect_drag_begin(widget, drag_context):
@@ -127,11 +120,11 @@ class GladeHandlers:
             widgets.effects_liststore[i][0] = i+1
         
     def on_enregistrernouveau_clicked(toolbutton):
-        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,Effect(widgets.liststore)])
+        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,"",Effect(widgets.liststore)])
         
     def on_Enregistrer_clicked(toolbutton):
         path = widgets["listEffect"].get_cursor()[0][0]
-        widgets.effects_liststore[path][1] = Effect(widgets.liststore)
+        widgets.effects_liststore[path][2] = Effect(widgets.liststore)
         
     def on_Save_clicked(toolbutton):
         if widgets.filename:
@@ -141,7 +134,6 @@ class GladeHandlers:
             widgets["filechooserdialog_save"].hide()
             if retour == 0:
                 widgets.save( widgets["filechooserdialog_save"].get_filename() )
-                
 
     def on_Ouvrir_clicked(toolbutton):
         retour = widgets["filechooserdialog_open"].run()
@@ -160,17 +152,20 @@ class WidgetsWrapper:
         self.init_DMX()
         self.init_effects()
         self.init_filechooser()
-        
+
         self.filename = ""
-        
+
     def init_DMX(self):
         self.liststore = listPotar()
-            
-        self["listPotar"].set_model(self.liststore)
+        self.potar_treemodelsort = gtk.TreeModelSort(self.liststore)
+        self["listPotar"].set_model(self.potar_treemodelsort)
         
         number_column = gtk.TreeViewColumn('Numero de ligne')
+        number_column.set_sort_column_id(0)
         name_column = gtk.TreeViewColumn('Description')
+        name_column.set_sort_column_id(1)
         value_column = gtk.TreeViewColumn('Valeur')
+        value_column.set_sort_column_id(2)
         self["listPotar"].append_column(number_column)
         self["listPotar"].append_column(name_column)
         self["listPotar"].append_column(value_column)
@@ -191,11 +186,13 @@ class WidgetsWrapper:
         
     def init_effects(self):
         self.effects_liststore = listEffect()
-        
-        self["listEffect"].set_model(self.effects_liststore)
+        self.effect_treemodelsort = gtk.TreeModelSort(self.effects_liststore)
+        self["listEffect"].set_model(self.effect_treemodelsort)
         
         number_column_effect = gtk.TreeViewColumn("Numero de l'effet")
+        number_column_effect.set_sort_column_id(0)
         desc_column_effect = gtk.TreeViewColumn("Description de l'effet")
+        desc_column_effect.set_sort_column_id(1)
         
         self["listEffect"].append_column(number_column_effect)
         self["listEffect"].append_column(desc_column_effect)
@@ -208,7 +205,7 @@ class WidgetsWrapper:
         desc_effect_cell.set_property('editable', True)
         desc_effect_cell.connect('edited', self.change_desc_effect)
         desc_column_effect.pack_start(desc_effect_cell)
-        desc_column_effect.set_cell_data_func(desc_effect_cell, self.display_effect, None)
+        desc_column_effect.add_attribute(desc_effect_cell,'text',1)
             
     def init_filechooser(self):
         filter = gtk.FileFilter()
@@ -221,7 +218,7 @@ class WidgetsWrapper:
         filter.set_name("All files")
         filter.add_pattern("*")
         self["filechooserdialog_save"].add_filter(filter)
-            
+
     def __getitem__(self, key):
         return self.widgets.get_widget(key)
         
@@ -230,7 +227,7 @@ class WidgetsWrapper:
         widgets["labelPotarName"].set_label(new_text)
         
     def change_desc_effect(self, cell, path, new_text):
-        self.effects_liststore[path][1].set_desc(new_text)
+        self.effects_liststore[path][1]=new_text
 
     def display_effect(self, column, cell, model, iter, user_data):
         pyobj = model.get_value(iter, 1)
@@ -239,27 +236,20 @@ class WidgetsWrapper:
         
     def getXml(self):
         doc = xml.dom.minidom.Document()
-        
         luz_root = doc.createElement("luz")
-        
         self.liststore.getXml(doc,luz_root)
         self.effects_liststore.getXml(doc,luz_root)
-        
         doc.appendChild(luz_root)
-                
         return doc
         
     def save(self,filename):
         basename = os.path.basename(filename)
         dirname = os.path.dirname(filename)
         basename, ext = os.path.splitext(basename)
-        
         ext=".luz"
-        
         filename = os.path.join(dirname,basename+ext)
         
         file = open(filename,"w")
-        
         PrettyPrint(self.getXml(),file)
         file.close()
         
@@ -274,6 +264,9 @@ class WidgetsWrapper:
         self["listEffect"].set_cursor(0)
         
         self.filename = filename
+        
+        self.effect_treemodelsort.set_sort_column_id(0,gtk.SORT_ASCENDING)
+        self.potar_treemodelsort.set_sort_column_id(0,gtk.SORT_ASCENDING)
 
 if __name__ == "__main__":
     widgets = WidgetsWrapper()
