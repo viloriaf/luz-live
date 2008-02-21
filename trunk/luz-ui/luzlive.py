@@ -52,11 +52,13 @@ class listEffect(gtk.ListStore):
             effect_obj = Effect(effect.getElementsByTagName("channel"))
             self.append([int(effect.getAttribute("id")),effect.getAttribute("desc"),effect_obj])
 
-class listPotar(gtk.ListStore):
+class listPotar(gtk.TreeStore):
     def __init__(self):
-        gtk.ListStore.__init__(self,gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
+        gtk.TreeStore.__init__(self,gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
+        self.iter_submasters = self.append(None,[-1,"SubMasters","0 %",0])
+        self.iter_potars = self.append(None,[-2,"Lignes","0 %",0])
         for i in range(512):
-            self.append([i+1,'ligne '+str(i+1),'0 %',0])
+            self.append(self.iter_potars,[i+1,'ligne '+str(i+1),'0 %',0])
 
     def getXml(self,doc,root):
         device = doc.createElement("device")
@@ -172,7 +174,9 @@ class WidgetsWrapper:
         
         number_cell = gtk.CellRendererText()
         number_column.pack_start(number_cell)
-        number_column.add_attribute(number_cell, 'text', 0)
+        number_column.set_cell_data_func(number_cell,self.display_number_cell)
+
+        ##number_column.add_attribute(number_cell, 'text', 0)
         
         name_cell = gtk.CellRendererText()
         name_cell.set_property('editable', True)
@@ -182,7 +186,25 @@ class WidgetsWrapper:
         
         value_cell = gtk.CellRendererText()
         value_column.pack_start(value_cell)
-        value_column.add_attribute(value_cell,'text',2)
+        value_column.set_cell_data_func(value_cell,self.display_value_cell)
+
+        self["listPotar"].set_expander_column(name_column)
+        ##value_column.add_attribute(value_cell,'text',2)
+        
+    def display_value_cell(self, column, cell, model, iter):
+        if model[iter][0] > 0:
+            cell.set_property('text', model.get_value(iter,2))
+        else:
+            cell.set_property('text', "")
+        return
+        
+    def display_number_cell(self, column, cell, model, iter):
+        if model[iter][0] > 0:
+            cell.set_property('text', model.get_value(iter,0))
+        else:
+            cell.set_property('text', "")
+        return
+        
         
     def init_effects(self):
         self.effects_liststore = listEffect()
