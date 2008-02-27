@@ -54,11 +54,11 @@ class listEffect(gtk.ListStore):
 
 class listPotar(gtk.TreeStore):
     def __init__(self):
-        gtk.TreeStore.__init__(self,gobject.TYPE_INT,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
-        self.iter_submasters = self.append(None,[-1,"SubMasters","0 %",0])
-        self.iter_potars = self.append(None,[-2,"Lignes","0 %",0])
+        gtk.TreeStore.__init__(self,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
+        self.iter_submasters = self.append(None,["","SubMasters","0 %",0])
+        self.iter_potars = self.append(None,["","Lignes","0 %",0])
         for i in range(512):
-            self.append(self.iter_potars,[i+1,'ligne '+str(i+1),'0 %',0])
+            self.append(self.iter_potars,[str(i+1),'Ligne '+str(i+1),'0 %',0])
 
     def getXml(self,doc,root):
         device = doc.createElement("device")
@@ -79,15 +79,69 @@ class listPotar(gtk.TreeStore):
 
 class GladeHandlers:
 
+	###################################################################
+	## General                                                        #
+    ###################################################################
     def on_window1_destroy_event(widget, data=None):
         gtk.main_quit()
 
     def on_window1_delete_event(widget, event, data=None):
         gtk.main_quit()
 
+	###################################################################
+	## Menu                                                           #
+	###################################################################
     def on_Quit_activate(menuitem):
         gtk.main_quit()
+        
+    def on_About_activate(menuitem):
+        widgets["aboutdialog1"].run()
+        widgets["aboutdialog1"].hide()
 
+	###################################################################
+	## ToolBar                                                        #
+	###################################################################
+    def on_buttonOpenShow_clicked(toolbutton):
+    	print "buttonOpenShow"
+        retour = widgets["filechooserdialog_open"].run()
+        widgets["filechooserdialog_open"].hide()
+        if retour == 0:
+            widgets.load( widgets["filechooserdialog_open"].get_filename() )
+        
+    def on_buttonSaveShow_clicked(toolbutton):
+        print "buttonSaveShow"
+        if widgets.filename:
+            widgets.save( widgets.filename )
+        else:
+            retour = widgets["filechooserdialog_save"].run()
+            widgets["filechooserdialog_save"].hide()
+            if retour == 0:
+                widgets.save( widgets["filechooserdialog_save"].get_filename() )
+
+    def on_buttonAddEffect_clicked(toolbutton):
+    	print "buttonAddEffect"
+        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,"",Effect(widgets.liststore)])
+
+    def on_buttonModifyEffect_clicked(toolbutton):
+    	print "buttonModifyEffect"
+        path = widgets["listEffect"].get_cursor()[0][0]
+        widgets.effects_liststore[path][2] = Effect(widgets.liststore)
+
+	def on_buttonDeleteEffect_clicked(toolbutton):
+		print "buttonDeleteEffect"
+		
+	def on_buttonAddSubmaster_clicked(toolbutton):
+		print "buttonAddSubmaster"
+		
+	def on_buttonModifySubmaster_clicked(toolbutton):
+		print "buttonModifySubmaster"
+		
+	def on_buttonDeleteSubmaster_clicked(tollbutton):
+		print "buttonDeleteSubmaster"
+
+	###################################################################
+	## Fenêtre principal                                              #
+	###################################################################
     def on_potarValueActual_value_changed(widget,data=None):
         new_value_str = str(int(widgets["potarValueActual"].get_value() * 100 / 255))+" %"
         widgets["labelPotarValue"].set_label(new_value_str)
@@ -112,40 +166,14 @@ class GladeHandlers:
         path = widgets["listPotar"].get_cursor()[0][0]
         widgets["potarValueActual"].set_value(widgets.liststore[path][3])
         widgets["labelPotarName"].set_label(widgets.liststore[path][1])
-        widgets["Enregistrer"].set_sensitive(True)
+        widgets["buttonModifyEffect"].set_sensitive(True)
         
     def on_listEffect_drag_begin(widget, drag_context):
-        widgets["Enregistrer"].set_sensitive(False)
+        widgets["buttonAddEffect"].set_sensitive(False)
                 
     def on_listEffect_drag_end(widget, drag_context):
         for i in range(len(widgets.effects_liststore)):
-            widgets.effects_liststore[i][0] = i+1
-        
-    def on_enregistrernouveau_clicked(toolbutton):
-        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,"",Effect(widgets.liststore)])
-        
-    def on_Enregistrer_clicked(toolbutton):
-        path = widgets["listEffect"].get_cursor()[0][0]
-        widgets.effects_liststore[path][2] = Effect(widgets.liststore)
-        
-    def on_Save_clicked(toolbutton):
-        if widgets.filename:
-            widgets.save( widgets.filename )
-        else:
-            retour = widgets["filechooserdialog_save"].run()
-            widgets["filechooserdialog_save"].hide()
-            if retour == 0:
-                widgets.save( widgets["filechooserdialog_save"].get_filename() )
-
-    def on_Ouvrir_clicked(toolbutton):
-        retour = widgets["filechooserdialog_open"].run()
-        widgets["filechooserdialog_open"].hide()
-        if retour == 0:
-            widgets.load( widgets["filechooserdialog_open"].get_filename() )
-        
-    def on_About_activate(menuitem):
-        widgets["aboutdialog1"].run()
-        widgets["aboutdialog1"].hide()
+            widgets.effects_liststore[i][0] = i+1        
 
 class WidgetsWrapper:
     def __init__(self):
@@ -292,5 +320,5 @@ class WidgetsWrapper:
 
 if __name__ == "__main__":
     widgets = WidgetsWrapper()
-    widgets["listPotar"].set_cursor(0)
+    widgets['listPotar'].set_cursor(0)
     gtk.main()
