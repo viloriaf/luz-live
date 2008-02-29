@@ -16,8 +16,14 @@ class Effect:
         self.channels={}
         
         if type(liststore)==listPotar:
-            for row in liststore : 
-                self.channels[row[0]]=row[3]
+            iter = liststore.iter_children(liststore.iter_potars)
+            while iter :
+                path = liststore.get_path(iter)
+                self.channels[liststore[path][0]]=liststore[path][3]
+                iter = liststore.iter_next(iter)
+        
+            ##for row in liststore. : 
+            ##    self.channels[row[0]]=row[3]
         elif type(liststore)==xml.dom.minicompat.NodeList:
             for i in range(len(widgets.liststore)):
                 self.channels[i]=0
@@ -54,9 +60,13 @@ class listEffect(gtk.ListStore):
 
 class listPotar(gtk.TreeStore):
     def __init__(self):
+        ## 0 - numéro de la ligne
+        ## 1 - nom de la ligne
+        ## 2 - valeur de la ligne en pourcentage
+        ## 3 - valeur de la ligne <255
         gtk.TreeStore.__init__(self,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
-        self.iter_submasters = self.append(None,["","SubMasters","0 %",0])
-        self.iter_potars = self.append(None,["","Lignes","0 %",0])
+        self.iter_submasters = self.append(None,["","SubMasters","",0])
+        self.iter_potars = self.append(None,["","Lignes","",0])
         for i in range(512):
             self.append(self.iter_potars,[str(i+1),'Ligne '+str(i+1),'0 %',0])
 
@@ -76,6 +86,12 @@ class listPotar(gtk.TreeStore):
                 int(line.getAttribute("id")),
                 line.getAttribute("desc"),
                 '0 %', 0 ] )
+                
+    def getPotar(self,id):
+        iter = self.iter_nth_child(self.iter_potars, id-1) 
+        path = self.get_path(iter)
+        return self[path]
+        
 
 class GladeHandlers:
 
@@ -120,13 +136,22 @@ class GladeHandlers:
 
     def on_buttonAddEffect_clicked(toolbutton):
     	print "buttonAddEffect"
-        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,"",Effect(widgets.liststore)])
+        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,"Effect "+str(len(widgets.effects_liststore)+1),Effect(widgets.liststore)])
 
     def on_buttonModifyEffect_clicked(toolbutton):
     	print "buttonModifyEffect"
         path = widgets["listEffect"].get_cursor()[0][0]
         widgets.effects_liststore[path][2] = Effect(widgets.liststore)
-
+        
+        ## si on est dans les submasters
+        if widgets["listPotar"].get_cursor()[0][0]==0:
+            pass
+        ## si on est dans les lignes
+        elif widgets["listPotar"].get_cursor()[0][0]==1:
+            if len(widgets["listPotar"].get_cursor()[0])>1: 
+                path = widgets["listPotar"].get_cursor()[0][1]+1
+                widgets["potarValueMemory"].set_value(widgets.liststore.getPotar(path)[3])
+    
 	def on_buttonDeleteEffect_clicked(toolbutton):
 		print "buttonDeleteEffect"
 		
@@ -146,27 +171,47 @@ class GladeHandlers:
         new_value_str = str(int(widgets["potarValueActual"].get_value() * 100 / 255))+" %"
         widgets["labelPotarValue"].set_label(new_value_str)
         
-        path = widgets["listPotar"].get_cursor()[0][0]
-        widgets.liststore[path][2]=new_value_str 
-        widgets.liststore[path][3]=widgets["potarValueActual"].get_value()
+        ## si on est dans les submasters
+        if widgets["listPotar"].get_cursor()[0][0]==0:
+            pass
+        ## si on est dans les lignes
+        elif widgets["listPotar"].get_cursor()[0][0]==1:
+            if len(widgets["listPotar"].get_cursor()[0])>1: 
+                path = widgets["listPotar"].get_cursor()[0][1]+1
+                widgets.liststore.getPotar(path)[2]=new_value_str 
+                widgets.liststore.getPotar(path)[3]=widgets["potarValueActual"].get_value()
         
     def on_listPotar_cursor_changed(treeview):
-        path = treeview.get_cursor()[0][0]
-        widgets["potarValueActual"].set_value(widgets.liststore[path][3])
-        widgets["labelPotarName"].set_label(widgets.liststore[path][1])
+        ## si on est dans les submasters
+        if treeview.get_cursor()[0][0]==0:
+            pass
+        ## si on est dans les lignes
+        elif treeview.get_cursor()[0][0]==1:
+            if len(treeview.get_cursor()[0])>1: 
+                path = treeview.get_cursor()[0][1]+1
+                widgets["potarValueActual"].set_value(widgets.liststore.getPotar(path)[3])
+                widgets["labelPotarName"].set_label(widgets.liststore.getPotar(path)[1])
         
     def on_listEffect_cursor_changed(treeview):
         path = treeview.get_cursor()[0][0]
         effect_to_put = widgets.effects_liststore[path][2]
         
         for nchannel,value in effect_to_put.channels.items():
-            widgets.liststore[nchannel-1][3]=value
-            widgets.liststore[nchannel-1][2]=str(value*100/255)+" %"
-            
-        path = widgets["listPotar"].get_cursor()[0][0]
-        widgets["potarValueActual"].set_value(widgets.liststore[path][3])
-        widgets["labelPotarName"].set_label(widgets.liststore[path][1])
+            widgets.liststore.getPotar(int(nchannel))[3]=value
+            widgets.liststore.getPotar(int(nchannel))[2]=str(value*100/255)+" %"
+        
+        if widgets["listPotar"].get_cursor()[0][0]==0:
+            pass
+        elif widgets["listPotar"].get_cursor()[0][0]==1:
+            if len(widgets["listPotar"].get_cursor()[0])>1:
+                path = widgets["listPotar"].get_cursor()[0][0]
+                widgets["potarValueActual"].set_value(widgets.liststore.getPotar(path)[3])
+                widgets["potarValueMemory"].set_value(widgets.liststore.getPotar(path)[3])
+
+                widgets["labelPotarName"].set_label(widgets.liststore.getPotar(path)[1])
+        
         widgets["buttonModifyEffect"].set_sensitive(True)
+        widgets["buttonDeleteEffect"].set_sensitive(True)
         
     def on_listEffect_drag_begin(widget, drag_context):
         widgets["buttonAddEffect"].set_sensitive(False)
@@ -218,6 +263,8 @@ class WidgetsWrapper:
 
         self["listPotar"].set_expander_column(name_column)
         ##value_column.add_attribute(value_cell,'text',2)
+        
+        self["listPotar"].expand_all()
         
     def display_value_cell(self, column, cell, model, iter):
         if model[iter][0] > 0:
@@ -320,5 +367,6 @@ class WidgetsWrapper:
 
 if __name__ == "__main__":
     widgets = WidgetsWrapper()
-    widgets['listPotar'].set_cursor(0)
+    
+    widgets['listPotar'].set_cursor(widgets.liststore.get_path(widgets.liststore.iter_children(widgets.liststore.iter_potars)))
     gtk.main()
