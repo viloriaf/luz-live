@@ -60,6 +60,25 @@ class listEffect(gtk.ListStore):
             effect_obj = Effect(effect.getElementsByTagName("channel"))
             self.append([int(effect.getAttribute("id")),effect.getAttribute("desc"),effect_obj])
 
+    def add(self,listPotars):
+        num_item=len(self)+1
+        self.append([
+            num_item,
+            "Effect "+str(num_item),
+            Effect(listPotars)
+        ])
+
+    def modify(self,path,listPotars):
+        self[path][2] = Effect(listPotars)
+
+    def remove(self,path):
+        gtk.ListStore.remove(self,self.get_iter(path))
+        self.recount_all()
+
+    def recount_all(self):
+        for i in range(len(self)):
+            self[i][0]=i+1
+
 class listPotar(gtk.TreeStore):
     def __init__(self):
         ## 0 - numéro de la ligne
@@ -105,6 +124,25 @@ class listPotar(gtk.TreeStore):
             iter = self.iter_next(iter)
         return dmxBuffer
 
+    def addSubMaster(self):
+        number = self.iter_n_children(self.iter_submasters)+1
+        new_iter = self.append(self.iter_submasters,[number,'Submaster '+str(number),'0 %',0])
+        iter = self.iter_children(self.iter_potars)
+        got_one = False
+        while iter :
+            path = self.get_path(iter)
+            if self[path][3]!=0:
+                got_one=True
+                self.append(new_iter,self[path])
+
+            iter = self.iter_next(iter)
+        if not got_one:
+            self.remove(new_iter)
+
+    def getSubMaster(self,id):
+        iter = self.iter_nth_child(self.iter_submasters, id-1)
+        path = self.get_path(iter)
+        return self[path]
 
 class GladeHandlers:
 
@@ -149,12 +187,13 @@ class GladeHandlers:
 
     def on_buttonAddEffect_clicked(toolbutton):
         print "buttonAddEffect"
-        widgets.effects_liststore.append([len(widgets.effects_liststore)+1,"Effect "+str(len(widgets.effects_liststore)+1),Effect(widgets.liststore)])
+        widgets.effects_liststore.add(widgets.liststore)
 
     def on_buttonModifyEffect_clicked(toolbutton):
         print "buttonModifyEffect"
         path = widgets["listEffect"].get_cursor()[0][0]
-        widgets.effects_liststore[path][2] = Effect(widgets.liststore)
+
+        widgets.effects_liststore.modify(path,widgets.liststore)
 
         ## si on est dans les submasters
         if widgets["listPotar"].get_cursor()[0][0]==0:
@@ -167,12 +206,17 @@ class GladeHandlers:
 
     def on_buttonDeleteEffect_clicked(toolbutton):
         print "buttonDeleteEffect"
+        path = widgets["listEffect"].get_cursor()[0][0]
+        widgets.effects_liststore.remove(path)
+
+        widgets["buttonModifyEffect"].set_sensitive(False)
+        widgets["buttonDeleteEffect"].set_sensitive(False)
+
 
     def on_buttonAddSubmaster_clicked(toolbutton):
         print "buttonAddSubmaster"
-
-    def on_buttonModifySubmaster_clicked(toolbutton):
-        print "buttonModifySubmaster"
+        widgets.liststore.addSubMaster()
+        widgets["listPotar"].expand_row((0,), False)
 
     def on_buttonDeleteSubmaster_clicked(tollbutton):
         print "buttonDeleteSubmaster"
@@ -196,9 +240,17 @@ class GladeHandlers:
         widgets.sendDMX()
 
     def on_listPotar_cursor_changed(treeview):
+        ##if len(treeview.get_cursor()[0])>1:
+
+
         ## si on est dans les submasters
         if treeview.get_cursor()[0][0]==0:
-            pass
+            if len(treeview.get_cursor()[0])==2:
+                path = treeview.get_cursor()[0][1]+1
+                widgets["potarValueActual"].set_value(widgets.liststore.getSubMaster(path)[3])
+                widgets["labelPotarName"].set_label(widgets.liststore.getSubMaster(path)[1])
+            elif len(treeview.get_cursor()[0])==3:
+                pass
         ## si on est dans les lignes
         elif treeview.get_cursor()[0][0]==1:
             if len(treeview.get_cursor()[0])>1:
@@ -285,13 +337,17 @@ class WidgetsWrapper:
     def init_LLA(self):
         self.con = lla.LlaClient()
         if self.con.start():
+            self.con_success = False
             print "Connexion échoué à LLAD"
+        else:
+            self.con_success = True
         self.universe = 0
         self.DMX_LEN = 512
 
     def sendDMX(self):
-        buffer = self.liststore.getDmxBuffer()
-        self.con.send_dmx(self.universe,buffer,self.DMX_LEN)
+        if self.con_success:
+            buffer = self.liststore.getDmxBuffer()
+            self.con.send_dmx(self.universe,buffer,self.DMX_LEN)
 
 
     def display_value_cell(self, column, cell, model, iter):
