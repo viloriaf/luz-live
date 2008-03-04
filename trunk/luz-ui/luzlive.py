@@ -81,11 +81,11 @@ class listEffect(gtk.ListStore):
 
 class listPotar(gtk.TreeStore):
     def __init__(self):
-        ## 0 - numéro de la ligne
-        ## 1 - nom de la ligne
-        ## 2 - valeur de la ligne en pourcentage
-        ## 3 - valeur de la ligne <255
-        gtk.TreeStore.__init__(self,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_STRING,gobject.TYPE_INT)
+        gtk.TreeStore.__init__(self,
+            gobject.TYPE_STRING, ## 0 - numéro de la ligne
+            gobject.TYPE_STRING, ## 1 - nom de la ligne
+            gobject.TYPE_STRING, ## 2 - valeur de la ligne en pourcentage
+            gobject.TYPE_INT)    ## 3 - valeur de la ligne <255
         self.iter_submasters = self.append(None,["","SubMasters","",0])
         self.iter_potars = self.append(None,["","Lignes","",0])
         for i in range(512):
@@ -108,20 +108,44 @@ class listPotar(gtk.TreeStore):
                 line.getAttribute("desc"),
                 '0 %', 0 ] )
 
+    def getLine(self, path):
+        return self[path]
+
     def getPotar(self,id):
         iter = self.iter_nth_child(self.iter_potars, id-1)
         path = self.get_path(iter)
         return self[path]
 
+    def getSubMaster(self,id):
+        iter = self.iter_nth_child(self.iter_submasters, id-1)
+        path = self.get_path(iter)
+        return self[path]
+
     def getDmxBuffer(self):
         dmxBuffer = lla.dmxBuffer(widgets.DMX_LEN)
+        tmpBuffer={}
         iter = self.iter_children(self.iter_potars)
         while iter :
             path = self.get_path(iter)
             ##print "path"+str(path[1])
             ##print 'value'+str(self[path][3])
             dmxBuffer[path[1]]=self[path][3]
+            tmpBuffer[path[1]]=self[path][3]
             iter = self.iter_next(iter)
+
+        iter = self.iter_children(self.iter_submasters)
+        while iter:
+            submaster_value = self.get_value(iter, 3)
+            iter_children=self.iter_children(iter)
+            while iter_children:
+                line_id=int(self.get_value(iter_children,0))
+                line_value=self.get_value(iter_children,3)
+                ##print line_id, type(line_id)
+                ##print line_value, type(line_value)
+                dmxBuffer[line_id]=max(tmpBuffer[line_id],line_value*submaster_value/255)
+                ##print line_value*submaster_value/255
+                iter_children=self.iter_next(iter_children)
+            iter=self.iter_next(iter)
         return dmxBuffer
 
     def addSubMaster(self):
@@ -131,7 +155,7 @@ class listPotar(gtk.TreeStore):
         got_one = False
         while iter :
             path = self.get_path(iter)
-            if self[path][3]!=0:
+            if self[path][3]*100/255!=0:
                 got_one=True
                 self.append(new_iter,self[path])
 
@@ -139,10 +163,6 @@ class listPotar(gtk.TreeStore):
         if not got_one:
             self.remove(new_iter)
 
-    def getSubMaster(self,id):
-        iter = self.iter_nth_child(self.iter_submasters, id-1)
-        path = self.get_path(iter)
-        return self[path]
 
 class GladeHandlers:
 
@@ -229,34 +249,51 @@ class GladeHandlers:
         widgets["labelPotarValue"].set_label(new_value_str)
 
         ## si on est dans les submasters
-        if widgets["listPotar"].get_cursor()[0][0]==0:
-            pass
-        ## si on est dans les lignes
-        elif widgets["listPotar"].get_cursor()[0][0]==1:
-            if len(widgets["listPotar"].get_cursor()[0])>1:
-                path = widgets["listPotar"].get_cursor()[0][1]+1
-                widgets.liststore.getPotar(path)[2]=new_value_str
-                widgets.liststore.getPotar(path)[3]=widgets["potarValueActual"].get_value()
-        widgets.sendDMX()
+        ##if len(widgets["listPotar"].get_cursor()[0])>1:
+        ##    if widgets["listPotar"].get_cursor()[0][0]==0:
+        ##        path = widgets["listPotar"].get_cursor()[0][1]+1
+        ##        widgets.liststore.getSubMaster(path)[2]=new_value_str
+        ##        widgets.liststore.getSubMaster(path)[3]=widgets["potarValueActual"].get_value()
+            ## si on est dans les lignes
+        ##    elif widgets["listPotar"].get_cursor()[0][0]==1:
+        ##        path = widgets["listPotar"].get_cursor()[0][1]+1
+        ##        widgets.liststore.getPotar(path)[2]=new_value_str
+        ##        widgets.liststore.getPotar(path)[3]=widgets["potarValueActual"].get_value()
+
+        path = widgets["listPotar"].get_cursor()[0]
+        if len(path)>1:
+            widgets.liststore.getLine(path)[2]=new_value_str
+            widgets.liststore.getLine(path)[3]=widgets["potarValueActual"].get_value()
+        else:
+            widgets.liststore.getLine(last)[2]=new_value_str
+            widgets.liststore.getLine(last)[3]=widgets["potarValueActual"].get_value()
+
+        ##print "on_potarValueActual_value_changed"
+        ##widgets.sendDMX()
 
     def on_listPotar_cursor_changed(treeview):
         ##if len(treeview.get_cursor()[0])>1:
+        path = treeview.get_cursor()[0]
+        if len(path)>1:
+            last_potar = path
 
+            widgets["potarValueActual"].set_value(widgets.liststore.getLine(path)[3])
+            widgets["labelPotarName"].set_label(widgets.liststore.getLine(path)[1])
 
         ## si on est dans les submasters
-        if treeview.get_cursor()[0][0]==0:
-            if len(treeview.get_cursor()[0])==2:
-                path = treeview.get_cursor()[0][1]+1
-                widgets["potarValueActual"].set_value(widgets.liststore.getSubMaster(path)[3])
-                widgets["labelPotarName"].set_label(widgets.liststore.getSubMaster(path)[1])
-            elif len(treeview.get_cursor()[0])==3:
-                pass
+        ##if treeview.get_cursor()[0][0]==0:
+        ##    if len(treeview.get_cursor()[0])==2:
+        ##        path = treeview.get_cursor()[0][1]+1
+        ##        widgets["potarValueActual"].set_value(widgets.liststore.getSubMaster(path)[3])
+        ##        widgets["labelPotarName"].set_label(widgets.liststore.getSubMaster(path)[1])
+        ##    elif len(treeview.get_cursor()[0])==3:
+        ##        pass
         ## si on est dans les lignes
-        elif treeview.get_cursor()[0][0]==1:
-            if len(treeview.get_cursor()[0])>1:
-                path = treeview.get_cursor()[0][1]+1
-                widgets["potarValueActual"].set_value(widgets.liststore.getPotar(path)[3])
-                widgets["labelPotarName"].set_label(widgets.liststore.getPotar(path)[1])
+        ##elif treeview.get_cursor()[0][0]==1:
+        ##    if len(treeview.get_cursor()[0])>1:
+        ##        path = treeview.get_cursor()[0][1]+1
+        ##        widgets["potarValueActual"].set_value(widgets.liststore.getPotar(path)[3])
+        ##        widgets["labelPotarName"].set_label(widgets.liststore.getPotar(path)[1])
 
     def on_listEffect_cursor_changed(treeview):
         path = treeview.get_cursor()[0][0]
@@ -287,6 +324,10 @@ class GladeHandlers:
             widgets.effects_liststore[i][0] = i+1
 
 class WidgetsWrapper:
+
+    ###################################################################
+    ## Fonctions d'init                                               #
+    ###################################################################
     def __init__(self):
         self.widgets = gtk.glade.XML("luz-live.glade")
         self.widgets.signal_autoconnect(GladeHandlers.__dict__)
@@ -326,6 +367,8 @@ class WidgetsWrapper:
         name_column.add_attribute(name_cell,'text',1)
 
         value_cell = gtk.CellRendererText()
+        value_cell.set_property('editable', True)
+        value_cell.connect('edited', self.change_value)
         value_column.pack_start(value_cell)
         value_column.set_cell_data_func(value_cell,self.display_value_cell)
 
@@ -333,6 +376,8 @@ class WidgetsWrapper:
         ##value_column.add_attribute(value_cell,'text',2)
 
         self["listPotar"].expand_all()
+
+        self.liststore.connect("row-changed", self.on_listPotar_rowchanged)
 
     def init_LLA(self):
         self.con = lla.LlaClient()
@@ -343,27 +388,6 @@ class WidgetsWrapper:
             self.con_success = True
         self.universe = 0
         self.DMX_LEN = 512
-
-    def sendDMX(self):
-        if self.con_success:
-            buffer = self.liststore.getDmxBuffer()
-            self.con.send_dmx(self.universe,buffer,self.DMX_LEN)
-
-
-    def display_value_cell(self, column, cell, model, iter):
-        if model[iter][0] > 0:
-            cell.set_property('text', model.get_value(iter,2))
-        else:
-            cell.set_property('text', "")
-        return
-
-    def display_number_cell(self, column, cell, model, iter):
-        if model[iter][0] > 0:
-            cell.set_property('text', model.get_value(iter,0))
-        else:
-            cell.set_property('text', "")
-        return
-
 
     def init_effects(self):
         self.effects_liststore = listEffect()
@@ -400,12 +424,45 @@ class WidgetsWrapper:
         filter.add_pattern("*")
         self["filechooserdialog_save"].add_filter(filter)
 
-    def __getitem__(self, key):
-        return self.widgets.get_widget(key)
+    ###################################################################
+    ## Callbacks                                                      #
+    ###################################################################
+    def display_value_cell(self, column, cell, model, iter):
+        if model[iter][0] > 0:
+            cell.set_property('text', model.get_value(iter,2))
+        else:
+            cell.set_property('text', "")
+        return
+
+    def display_number_cell(self, column, cell, model, iter):
+        if model[iter][0] > 0:
+            cell.set_property('text', model.get_value(iter,0))
+        else:
+            cell.set_property('text', "")
+        return
 
     def change_name(self, cell, path, new_text):
         self.liststore[path][1]= new_text
         widgets["labelPotarName"].set_label(new_text)
+
+    def change_value(self,cell, path, new_text):
+        if new_text.isalnum() and not new_text.isalpha():
+            new_value=int(new_text)
+        elif new_text[-2:]==' %' and new_text[:-2].isalnum() and not new_text[:-2].isalpha():
+            new_value=int(new_text[:-2])
+        elif new_text[-1]=='%' and new_text[:-1].isalnum() and not new_text[:-1].isalpha():
+            new_value=int(new_text[:-1])
+
+        if new_value>100:
+            new_value=100
+        elif new_value<0:
+            new_value=0
+        self.liststore[path][2]=str(new_value)+" %"
+        self.liststore[path][3]=new_value*255/100+1
+
+    def on_listPotar_rowchanged(self, treemodel, path, iter):
+        print "on_rowchanged"
+        self.sendDMX()
 
     def change_desc_effect(self, cell, path, new_text):
         self.effects_liststore[path][1]=new_text
@@ -414,6 +471,18 @@ class WidgetsWrapper:
         pyobj = model.get_value(iter, 1)
         cell.set_property('text', str(pyobj))
         return
+
+    ###################################################################
+    ## Divers                                                         #
+    ###################################################################
+    def __getitem__(self, key):
+        return self.widgets.get_widget(key)
+
+    def sendDMX(self):
+        print "sendDMX"
+        if self.con_success:
+            buffer = self.liststore.getDmxBuffer()
+            self.con.send_dmx(self.universe,buffer,self.DMX_LEN)
 
     def getXml(self):
         doc = xml.dom.minidom.Document()
@@ -452,6 +521,7 @@ class WidgetsWrapper:
 
 if __name__ == "__main__":
     widgets = WidgetsWrapper()
-
-    widgets['listPotar'].set_cursor(widgets.liststore.get_path(widgets.liststore.iter_children(widgets.liststore.iter_potars)))
+    last=(1,0)
+    ##widgets['listPotar'].set_cursor(widgets.liststore.get_path(widgets.liststore.iter_children(widgets.liststore.iter_potars)))
+    widgets['listPotar'].set_cursor(last)
     gtk.main()
