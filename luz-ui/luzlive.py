@@ -5,32 +5,43 @@ import gtk
 import gtk.glade
 import gobject
 
-import xml.dom.minidom
-from xml.dom.ext import PrettyPrint
+# import xml.dom.minidom
+# from xml.dom.ext import PrettyPrint
 
 import os.path
 
-import lla
+try:
+    import lla
+    import_lla = True
+except: 
+    import_lla = False
 
 class Effect:
 
     def __init__(self,liststore):
         self.channels={}
+        self.submasters={}
 
         if type(liststore)==listPotar:
             iter = liststore.iter_children(liststore.iter_potars)
             while iter :
-                path = liststore.get_path(iter)
-                self.channels[liststore[path][0]]=liststore[path][3]
+                self.channels[liststore.get_value(iter,0)]=liststore.get_value(iter,3)
                 iter = liststore.iter_next(iter)
 
+            iter = liststore.iter_children(liststore.iter_submasters)
+            while iter:
+                self.submasters[liststore.get_value(iter,0)]=liststore.get_value(iter,3)
+                iter = liststore.iter_next(iter)
             ##for row in liststore. :
             ##    self.channels[row[0]]=row[3]
         elif type(liststore)==xml.dom.minicompat.NodeList:
             for i in range(len(widgets.liststore)):
                 self.channels[i]=0
+            ##TODO : idem piour les submasters
             for channel in liststore:
                 self.channels[int(channel.getAttribute("id"))]=int(channel.getAttribute("value"))
+            for submaster in liststore:
+                self.submasters[int(submaster.getAttribute("id"))]=int(submaster.getAttribute("value"))
 
     def getXml(self, doc, effectNode):
         for channel_id,value in self.channels.items():
@@ -39,6 +50,12 @@ class Effect:
                 channel.setAttribute("id",str(channel_id))
                 channel.setAttribute("value",str(value))
                 effectNode.appendChild(channel)
+        for submaster_id,value in self.submasters.items():
+            if value>0:
+                submaster = doc.createElement("submaster")
+                submaster.setAttribute("id",str(submaster_id))
+                submaster.setAttribute("value",str(value))
+                effectNode.appendChild(submaster)
 
 class listEffect(gtk.ListStore):
     def __init__(self):
@@ -143,7 +160,8 @@ class listPotar(gtk.TreeStore):
                 ##print line_id, type(line_id)
                 ##print line_value, type(line_value)
                 dmxBuffer[line_id]=max(tmpBuffer[line_id],line_value*submaster_value/255)
-                ##print line_value*submaster_value/255
+                if line_id==1:
+                    print tmpBuffer[line_id], line_value*submaster_value/255
                 iter_children=self.iter_next(iter_children)
             iter=self.iter_next(iter)
         return dmxBuffer
@@ -215,18 +233,21 @@ class GladeHandlers:
 
         widgets.effects_liststore.modify(path,widgets.liststore)
 
+        cursor_path = widgets["listPotar"].get_cursor()[0]
+        if len(cursor_path)>1:
+            widgets["potarValueMemory"].set_value(widgets.liststore.getLine(cursor_path)[3])
         ## si on est dans les submasters
-        if widgets["listPotar"].get_cursor()[0][0]==0:
-            pass
-        ## si on est dans les lignes
-        elif widgets["listPotar"].get_cursor()[0][0]==1:
-            if len(widgets["listPotar"].get_cursor()[0])>1:
-                path = widgets["listPotar"].get_cursor()[0][1]+1
-                widgets["potarValueMemory"].set_value(widgets.liststore.getPotar(path)[3])
+        # if [0]==0:
+            # pass
+        # si on est dans les lignes
+        # elif widgets["listPotar"].get_cursor()[0][0]==1:
+            # if len(widgets["listPotar"].get_cursor()[0])>1:
+                # path = widgets["listPotar"].get_cursor()[0][1]+1
+                
 
     def on_buttonDeleteEffect_clicked(toolbutton):
         print "buttonDeleteEffect"
-        path = widgets["listEffect"].get_cursor()[0][0]
+        path = widgets["listEffect"].get_cursor()[0]
         widgets.effects_liststore.remove(path)
 
         widgets["buttonModifyEffect"].set_sensitive(False)
@@ -278,7 +299,11 @@ class GladeHandlers:
             last_potar = path
 
             widgets["potarValueActual"].set_value(widgets.liststore.getLine(path)[3])
-            widgets["labelPotarName"].set_label(widgets.liststore.getLine(path)[1])
+            if path[0]==0 and len(path)==3:
+                new_label="SubMaster "+str(path[1]+1)+" : "+widgets.liststore.getLine(path)[1]
+            else:
+                new_label=widgets.liststore.getLine(path)[1]
+            widgets["labelPotarName"].set_label(new_label)
 
         ## si on est dans les submasters
         ##if treeview.get_cursor()[0][0]==0:
@@ -302,16 +327,26 @@ class GladeHandlers:
         for nchannel,value in effect_to_put.channels.items():
             widgets.liststore.getPotar(int(nchannel))[3]=value
             widgets.liststore.getPotar(int(nchannel))[2]=str(value*100/255)+" %"
+        for nsub,value in effect_to_put.submasters.items():
+            widgets.liststore.getSubMaster(int(nsub))[3]=value
+            widgets.liststore.getSubMaster(int(nsub))[2]=str(value*100/255)+" %"
 
-        if widgets["listPotar"].get_cursor()[0][0]==0:
-            pass
-        elif widgets["listPotar"].get_cursor()[0][0]==1:
-            if len(widgets["listPotar"].get_cursor()[0])>1:
-                path = widgets["listPotar"].get_cursor()[0][0]
-                widgets["potarValueActual"].set_value(widgets.liststore.getPotar(path)[3])
-                widgets["potarValueMemory"].set_value(widgets.liststore.getPotar(path)[3])
+        cursor_path = widgets["listPotar"].get_cursor()[0]
+        if len(cursor_path)>1:
+            widgets["potarValueActual"].set_value(widgets.liststore.getLine(cursor_path)[3])
+            widgets["potarValueMemory"].set_value(widgets.liststore.getLine(cursor_path)[3])
+            widgets["labelPotarName"].set_label(widgets.liststore.getLine(cursor_path)[1])
+            
+            
+        # if widgets["listPotar"].get_cursor()[0][0]==0:
+            # pass
+        # elif widgets["listPotar"].get_cursor()[0][0]==1:
+            # if len(widgets["listPotar"].get_cursor()[0])>1:
+                # path = widgets["listPotar"].get_cursor()[0][0]
+                # widgets["potarValueActual"].set_value(widgets.liststore.getPotar(path)[3])
+                # widgets["potarValueMemory"].set_value(widgets.liststore.getPotar(path)[3])
 
-                widgets["labelPotarName"].set_label(widgets.liststore.getPotar(path)[1])
+                # widgets["labelPotarName"].set_label(widgets.liststore.getPotar(path)[1])
 
         widgets["buttonModifyEffect"].set_sensitive(True)
         widgets["buttonDeleteEffect"].set_sensitive(True)
@@ -380,15 +415,18 @@ class WidgetsWrapper:
         self.liststore.connect("row-changed", self.on_listPotar_rowchanged)
 
     def init_LLA(self):
-        self.con = lla.LlaClient()
-        if self.con.start():
-            self.con_success = False
-            print "Connexion échoué à LLAD"
+        if import_lla:
+            self.con = lla.LlaClient()
+            if self.con.start():
+                self.con_success = False
+                print "Connexion échoué à LLAD"
+            else:
+                self.con_success = True
+            self.universe = 0
+            self.DMX_LEN = 512
         else:
-            self.con_success = True
-        self.universe = 0
-        self.DMX_LEN = 512
-
+            self.con_success = False
+            
     def init_effects(self):
         self.effects_liststore = listEffect()
         self.effect_treemodelsort = gtk.TreeModelSort(self.effects_liststore)
@@ -461,15 +499,14 @@ class WidgetsWrapper:
         self.liststore[path][3]=new_value*255/100+1
 
     def on_listPotar_rowchanged(self, treemodel, path, iter):
-        print "on_rowchanged"
         self.sendDMX()
 
     def change_desc_effect(self, cell, path, new_text):
         self.effects_liststore[path][1]=new_text
 
     def display_effect(self, column, cell, model, iter, user_data):
-        pyobj = model.get_value(iter, 1)
-        cell.set_property('text', str(pyobj))
+        effect = model.get_value(iter, 1)
+        cell.set_property('text', str(effect))
         return
 
     ###################################################################
@@ -479,7 +516,7 @@ class WidgetsWrapper:
         return self.widgets.get_widget(key)
 
     def sendDMX(self):
-        print "sendDMX"
+        ##print "sendDMX"
         if self.con_success:
             buffer = self.liststore.getDmxBuffer()
             self.con.send_dmx(self.universe,buffer,self.DMX_LEN)
