@@ -181,6 +181,8 @@ class listPotar(gtk.TreeStore):
         if not got_one:
             self.remove(new_iter)
 
+    def removeSubMaster(self,path):
+        gtk.TreeStore.remove(self, self.get_iter(path))
 
 class GladeHandlers:
 
@@ -253,14 +255,30 @@ class GladeHandlers:
         widgets["buttonModifyEffect"].set_sensitive(False)
         widgets["buttonDeleteEffect"].set_sensitive(False)
 
-
     def on_buttonAddSubmaster_clicked(toolbutton):
         print "buttonAddSubmaster"
         widgets.liststore.addSubMaster()
         widgets["listPotar"].expand_row((0,), False)
 
-    def on_buttonDeleteSubmaster_clicked(tollbutton):
+    def on_buttonDeleteSubmaster_clicked(toolbutton):
         print "buttonDeleteSubmaster"
+        path = widgets["listPotar"].get_cursor()[0]
+
+        if len(path)==2 and path[0]==0:
+            iter = widgets.liststore.get_iter(path)
+            if widgets.liststore.iter_next(iter):
+                iter_next = widgets.liststore.iter_next(iter)
+            elif widgets.liststore.iter_n_children(widgets.liststore.iter_submasters)==1:
+                iter_next = widgets.liststore.iter_children(widgets.liststore.iter_potars)
+            else:
+                iter_next = widgets.liststore.iter_children(widgets.liststore.iter_submasters)
+            new_path = widgets.liststore.get_path(iter_next)
+            widgets["listPotar"].set_cursor(new_path)
+            
+            widgets.liststore.removeSubMaster(path)
+        
+            
+            
 
     ###################################################################
     ## Fenêtre principal                                              #
@@ -297,13 +315,17 @@ class GladeHandlers:
         path = treeview.get_cursor()[0]
         if len(path)>1:
             last_potar = path
-
             widgets["potarValueActual"].set_value(widgets.liststore.getLine(path)[3])
             if path[0]==0 and len(path)==3:
                 new_label="SubMaster "+str(path[1]+1)+" : "+widgets.liststore.getLine(path)[1]
             else:
                 new_label=widgets.liststore.getLine(path)[1]
             widgets["labelPotarName"].set_label(new_label)
+            
+        if path[0]==0 and len(path)==2:
+            widgets["buttonDeleteSubmaster"].set_sensitive(True)
+        else:
+            widgets["buttonDeleteSubmaster"].set_sensitive(False)
 
         ## si on est dans les submasters
         ##if treeview.get_cursor()[0][0]==0:
